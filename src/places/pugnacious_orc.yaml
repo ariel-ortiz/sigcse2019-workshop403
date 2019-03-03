@@ -1,0 +1,196 @@
+# Adapted from "Creating a Text-Based Adventure and Quiz Game in Python"
+# by Derek Shidler.
+#
+# https://www.derekshidler.com/how-to-create-a-text-based-adventure-and-quiz-game-in-python/
+
+# Name of starting place must have a '__' (dunder) prefix.
+__start:
+  statement: |
+
+    T H E   P U G N A C I O U S   O R C
+    ===================================
+
+    After a drunken night out with friends, you awaken the
+    next morning in a thick, dank forest. Head spinning and
+    fighting the urge to vomit, you stand and marvel at
+    your new, unfamiliar setting. The peace quickly fades
+    when you hear a grotesque sound emitting behind you. A
+    slobbering pugnacious orc is running towards you.
+
+    What do you do?
+  options:
+    - text: Grab a nearby rock and throw it at the orc
+      target: rock
+    - text: Lie down and wait to be mauled
+      target: lie
+    - text: Run
+      target: run
+
+cave:
+  statement: |
+    You were hesitant, since the cave was dark and ominous.
+    Before you fully enter, you notice a shiny sword on the
+    ground.
+
+    Do you pick up the sword?
+  options:
+    - text: yes
+      target: next_with_sword
+    - text: no
+      target: next_without_sword
+  points: 5
+
+fight:
+  statement: |
+    You're no match for an orc.
+
+    You died!
+
+fight_with_sword:
+  statement: |
+    You laid in wait. The shimmering sword attracted the
+    orc, which thought you were no match. As he walked
+    closer and closer, your heart beat rapidly. As the orc
+    reached out to grab the sword, you pierced the blade
+    into its chest.
+
+    You survived!
+  points: 100
+
+fight_without_sword:
+  statement: |
+    You should have picked up that sword. You're
+    defenseless.
+
+    You died!
+
+hide_behind_boulder:
+  statement: |
+    You're easily spotted.
+
+    You died!
+
+hide_in_cave:
+  statement: |
+    Really? You're going to hide in the dark? I think orcs
+    can see very well in the dark, right? Not sure, but I'm
+    going with YES, so...
+
+    You died!
+
+lie:
+  statement: |
+    Welp, that was quick.
+
+    You died!
+
+next_with_sword:
+  statement: |
+    What do you do next?
+  options:
+    - text: Hide in silence
+      target: hide_in_cave
+    - text: Fight
+      target: fight_with_sword
+    - text: Run
+      target: sneak_out
+  points: 10
+
+next_without_sword:
+  statement: |
+    What do you do next?
+  options:
+    - text: Hide in silence
+      target: hide_in_cave
+    - text: Fight
+      target: fight_without_sword
+    - text: Run
+      target: sneak_out
+  points: 5
+
+rock:
+  statement: |
+    The orc is stunned, but regains control. He begins
+    running towards you again.
+
+    What do you want to do?
+  options:
+    - text: Run
+      target: run
+    - text: Throw another rock
+      target: rock_again
+    - text: Go to a nearby cave
+      target: cave
+  points: 10
+
+rock_again:
+  statement: |
+    You decided to throw another rock, as if the first
+    rock thrown did much damage. The rock flew well over
+    the orc's head. You missed.
+
+    You died!
+
+run:
+  statement: |
+    You run as quickly as possible, but the orc's
+    speed is too great.
+
+    What do you want to do?
+  options:
+    - text: Hide behind a boulder
+      target: hide_behind_boulder
+    - text: Fight
+      target: fight
+    - text: Run towards an abandoned town
+      target: town
+  points: 5
+
+sneak_out:
+  statement: |
+    As the orc enters the dark cave, you sliently sneak
+    out. You're several feet away, but the orc turns around
+    and sees you running.
+
+    What do you do?
+  options:
+    - text: Lie down and hope for the best
+      target: lie
+    - text: Keep running
+      target: run
+  points: 5
+
+town:
+  statement: |
+    While frantically running, you notice a rusted sword
+    lying in the mud. You quickly reach down and grab it,
+    but miss. You try to calm your heavy breathing as you
+    hide behind a delapitated building, waiting for the orc
+    to come charging around the corner. You notice a purple
+    flower near your foot.
+
+    Do you pick it up?
+  options:
+    - text: yes
+      target: wait_with_flower
+    - text: no
+      target: wait_without_flower
+  points: 10
+
+wait_with_flower:
+  statement: |
+    The orc inevitably finds you. You quickly hold out the
+    purple flower, somehow hoping it will stop him.
+    It does! The orc was looking for love.
+
+    This got weird, but you survived!
+  points: 100
+
+wait_without_flower:
+  statement: |
+    You hear its heavy footsteps and ready yourself for
+    the impending orc.
+
+    Maybe you should have picked up the flower.
+
+    You died!

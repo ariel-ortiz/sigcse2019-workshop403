@@ -1,0 +1,1222 @@
+= Architecting Serverless Microservices on the Cloud with AWS
+:author: Ariel Ortiz
+:email: ariel.ortiz@itesm.mx
+:revnumber: 1.0.0
+:revdate: March 2, 2019.
+:encoding: utf-8
+:source-highlighter: pygments
+:icons: font
+:pygments-style: manni
+:toc: left
+:toclevels: 3
+:numbered:
+:data-uri:
+:imagesdir: ./images
+
+image::workshop_logo.png[]
+
+Workshop 403 @ https://sigcse2019.sigcse.org/[SIGCSE 2019]. March 2, 2019. Minneapolis, MN. U.S.A.
+
+====
+Please complete the https://bit.ly/sigcse2019-workshops-saturday[Evaluation Form] at the end of the workshop. Thank you!
+====
+
+== Introduction
+
+In this workshop we'll learn how to write microservices on the cloud using several of the free tier products provided by Amazon Web Services (AWS). But first let's cover some concepts.
+
+=== Cloud Computing
+
+_Cloud computing_ is the delivery of computing services (e.g., servers, storage, databases, networking, and software) over the Internet (the “cloud”) typically paying only for the services you actually use. It has important benefits: lower costs, better scalability, and simpler manageability.
+
+There are three cloud computing models popular on the market:
+
+Infrastructure as Service (IaaS):: Provides virtualized computing resources over the internet. A cloud provider hosts the infrastructure components traditionally present in an on-premises data center, including servers, storage and networking hardware.
++
+Examples:
++
+- Amazon Elastic Compute Cloud (EC2)
+- Google Compute Engine (GCE)
+
+Platform as a Service (PaaS):: Provides a computing platform which typically includes operating system, programming language execution environments, databases, and web servers.
++
+Examples:
++
+- AWS Elastic Beanstalk
+- Google App Engine (GAE)
+- Heroku
+
+Software as a Service (SaaS):: Provides access to application services installed at a server. No need to worry about installation, maintenance or coding of that software. You access and operate the software using a web browser.
++
+Examples:
++
+- Gmail
+- Office 365
+- Netflix
+
+.Understanding IaaS, PaaS, and SaaS with a Car Example
+****
+Taken from http://blog.webspecia.com/cloud/iaas-paas-saas-explained-examples-comparison[The WebSpecia] blog:
+
+- _With **IaaS**, it's like leasing a car. Keeping the car repaired is someone else's problem, you just need to supply it with fuel (setting it up, maintaining software, etc.) and you get to go pretty much wherever you want to._
+
+- _**PaaS** is a bit like getting a taxi. You get in and choose where you want to go to and how to get there. Keeping the car running and figuring out the details is up to the driver._
+
+- _**SaaS** is a bit like public transport. Cheap, someone else takes care of pretty much everything, you just get to use it. This comes at the price of not always getting as close as you want (less customizability)._
+****
+
+=== Wep API
+
+An _Application Programming Interface_ (API) is a set of functions and procedures that allow the creation of applications that access the features or data of an operating system, application, or other service.
+A _Web API_, as the name suggests, is an API over the web which can be accessed using the HTTP protocol.
+
+=== Microservice Architecture
+
+According to https://martinfowler.com/articles/microservices.html[James Lewis and Martin Fowler], a _microservice architectural style_ is an approach for developing a software application as a suite of small loosely coupled services, each running in its own process and communicating through lightweight mechanisms, such as HTTP. These services are built around one specific business capability, for example: user management, user roles, e-commerce cart, search engine, or social media logins. They are independent of each other, which means that they can be written in different programming languages, use different data storages, and have practically unlimited scalability.
+
+.Monolithic vs. Microservices Architecture. Source: https://dzone.com/articles/what-are-microservices-actually[dzone.com]
+image::microservice_architecture.png[width=700]
+
+=== Serverless Computing
+
+_Serverless computing_, as explained by https://www.computerworlduk.com/cloud-computing/what-is-serverless-computing-how-is-aws-lambda-helping-enterprises-run-it-3651542/[Scott Carey],
+is a method of providing backend services on a pay-per-use basis. A serverless provider allows developers to write and deploy code without the hassle of worrying about the underlying infrastructure. A company that gets backend services from a serverless vendor is charged based on their computation and do not have to reserve and pay for a fixed amount of bandwidth or number of servers, as the service is auto-scaling. Note that although called serverless, physical servers are still used but developers do not need to be aware of them.
+
+Serverless relies on a *Functions as a Service* (FaaS) platform, where developers break down their applications into small, stateless chunks, meaning they can execute without any context regarding the underlying server.
+
+The leading FaaS providers are:
+
+- https://aws.amazon.com/lambda/[AWS Lambda]
+- https://cloud.google.com/functions/[Google Cloud Functions]
+- https://azure.microsoft.com/en-us/services/functions/[Microsoft Azure Functions]
+- https://console.bluemix.net/openwhisk/[IBM Cloud Functions]
+
+.Putting Everything Together
+****
+_Microservices_ is the way you architect your solution. A single microservice typically exposes a well-defined _Web API_ (this is what your consumers see) and it can be conveniently executed on a _Serverless computing_ (FaaS) platform, which in turn is part of a larger _cloud computing_ ecosystem.
+****
+
+=== Preparing your Cloud Development Environment
+
+IMPORTANT: It's assumed that you already have an Amazon Web Services (AWS) account.
+
+. Sign in to your AWS Account using the https://console.aws.amazon.com[AWS Management Console].
+
+. Choose *US East (N. Virginia)* from the region list to the right of your account information on the navigation bar.
+
+. Create a Cloud9 environment.
++
+[NOTE]
+====
+*AWS Cloud9* contains a collection of tools that you use to code, build, run, test, debug, and release software in the cloud. To work with these tools, you use the AWS Cloud9 integrated development environment, or IDE.
+
+When we create an AWS Cloud9 environment we'll also create an *Elastic Compute Cloud (EC2)* instance. EC2 is a web service that provides secure, resizable compute capacity in the cloud. It is designed to make web-scale cloud computing easier for developers.
+====
++
+.. Open the Cloud9 console. At the *AWS services* field type *Cloud9* and select *Cloud9 A Cloud IDE for Writing, Running, and Debugging Code*.
+.. Choose *Create environment*.
++
+WARNING: You will see a warning indicating that you shouldn't use your AWS root account to create or work with environments. Ignore this message for the time being.
+// TODO: Add how to create an IAM user account.
++
+.. On the *Name environment* page, type a name and a description for your environment. Choose *Next step*.
+.. On the *Configure settings* page, keep all the default options. Choose *Next step*.
+.. On the *Review* page, choose *Create environment*.
++
+////
+. Configuring the AWS CLI (Command-line interface).
+  .. At the Cloud9 terminal, type:
++
+----
+aws configure
+----
+////
+. [[python_version, Check Python Version]]Take note of the Python 3 version available in your environment. At the Cloud9 terminal, type the following:
++
+[source, bash]
+python3 --version
++
+You should see something like this:
++
+[source, text]
+Python 3.6.7
++
+[IMPORTANT]
+====
+Make sure to always use the command `python3` at the terminal during this workshop. If you run the `python` command you'll end up running Python 2.7 instead of Python 3, and some of the code might not work properly.
+====
+. Install the two Python modules that we'll be using during this workshop:
++
+--
+Requests:: This is an elegant and simple HTTP library for Python, built for human beings. It allows you to send organic, grass-fed HTTP/1.1 requests, without the need for manual labor. There's no need to manually add query strings to your URLs, or to form-encode your POST data. +
+Documentation: http://docs.python-requests.org/en/master/[docs.python-requests.org].
+Boto 3:: This is the Amazon Web Services (AWS) SDK for Python. It enables Python developers to create, configure, and manage AWS services, such as DynamoDB. Boto provides an easy to use, object-oriented API, as well as low-level access to AWS services. +
+Documentation: https://boto3.amazonaws.com/v1/documentation/api/latest/index.html[boto3.amazonaws.com].
+--
++
+We'll be using `pip` (the Python package management system) to install external libraries. At the terminal type:
++
+[source, bash]
+sudo python3 -m pip install requests boto3
++
+WARNING: You might get a message saying that you're using an outdated version of `pip` and that you should upgrade it. *Do not follow this advice.* For some strange reason `pip` seems to break after the upgrade, so please don't do it.
+
+== Hello, World!
+
+We'll start with a simple “Hello, World!” microservice. All of our microservices will be implemented as AWS Lambda functions.
+
+=== Creating a Lambda Function
+
+. [[create_a_new_Lambda_function, Create a new Lambda function]]Follow these steps to create a new Lambda function.
+.. In a new browser window or tab, go to the https://console.aws.amazon.com/[AWS Management Console].
+.. Open the Lambda console. At the *AWS services* field type *Lambda* and select *Lambda Run Code without Thinking about Servers*.
+.. Choose *Create function*.
+.. On the *Create function* page, choose *Author from scratch*.
+.. In *Author from scratch*, do the following:
++
+- In *Name*, specify your Lambda function name. For example: `hello_world`.
+- In *Runtime*, select the version of Python that you obtained in the <<python_version>> section (most likely *Python 3.6*).
+- In *Role*, choose *Create a new role from one or more templates*
+- In *Role name*, enter a name for your role. For example: `workshop_role`.
+- In *Policy templates*, select *Simple microservice permissions*.
++
+.. Choose *Create function*.
+. [[api_gateway, API Gateway]]Create an API Gateway for the Lambda function.
++
+NOTE: An _API Gateway_ is a fully managed service that makes it easy for developers to create, publish, maintain, monitor, and secure Web APIs at any scale. The API Gateway handles all the tasks involved in accepting and processing up to hundreds of thousands of concurrent API calls, including traffic management, authorization and access control, monitoring, and API version management.
++
+.. In the *Add triggers* panel, choose *API Gateway*.
+.. In *Configure triggers*, do the following:
++
+- In *API*, select *Create a new API*.
+- In *Security*, select *Open*.
+// TODO: Better choose Open with API key?
+- Choose *Add*.
+- Choose *Save*.
+. Test your new function and API Gateway using `curl`.
++
+NOTE: `curl`, which stands for _client URL_, is a command line tool for file transfers. It supports a number of protocols including HTTP, HTTPS, FTP, and many more. It's a great tool for interacting with Web APIs.
++
+.. [[api_endpoint, API endpoint]]From the *API Gateway* panel, copy the *API endpoint* link address from the *hello_world-API*.
+.. [[testing_with_curl, testing with curl]]At the Cloud9 terminal, type `curl` followed by the link from the previous point, something like this:
++
+[source, bash]
+curl https://some.end.point.amazonaws.com/default/hello_world
++
+The output should be:
++
+[source, json]
+"Hello from Lambda!"
+
+=== Extending the Lambda Function
+
+. [[import_the_new_lambda_function, Import the new Lambda function]]Import the Lambda function into the Cloud9 environment.
+.. Go to the Cloud9 IDE.
+.. Open the *AWS Resources* tab from the right hand side of the IDE.
+.. Expand the *Remote Functions* element and chose the *hello_world* function.
++
+TIP: If no remote or local functions appear, refresh the function list by clicking on the circled arrow icon.
+.. Choose the down arrow icon to import the selected Lambda function.
+.. Choose *Import* in the *Import AWS Lambda function* dialog window.
++
+NOTE: A `hello_world` folder is created in your environment's file system. Whatever you place in this folder will be considered part of you Lambda function whenever you deploy it.
+. Inspect the Lambda function by opening the `hello_world/lambda_function.py` file in the editor.
++
+The automatically generated code for the Lambda function looks like this:
++
+.File: lambda_function.py (original version)
+[source, python3]
+----
+import json
+
+def lambda_handler(event, context): # <1>
+    # TODO implement
+    return { # <2>
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+----
++
+<1> The `lambda_handler` function has two parameters:
++
+* `event`: This parameter is a dictionary that is used to pass in event data to the handler. It contains the keys in <<table_1>>, among others.
++
+[[table_1, Table 1]]
+.Dictionary Keys for Event
+[cols="1l,3a", options="header"]
+|===
+^|Key
+^|Description
+
+|httpMethod
+|A string with the request HTTP method, for example: GET, POST, PUT or DELETE.
+
+|path
+|A string with the request path (the name of the Lambda function starting with a slash).
+
+|queryStringParameters
+|A dictionary with the https://en.wikipedia.org/wiki/Query_string[query string] parameters, or `None` if the request has no query string.
+
+|headers
+|A dictionary with the request headers.
+
+|body
+|A string with the request body, or `None` if the request has no body.
+|===
++
+* `context`: This parameter provides runtime information to your handler. Its type is https://docs.aws.amazon.com/lambda/latest/dg/python-context-object.html[`LambdaContext`].
+<2> The handler should return a dictionary from which the HTTP response will be constructed.
++
+.Dictionary Keys for HTTP Response
+[cols="1l,3a", options="header"]
+|===
+^|Key
+^|Description
+
+|statusCode
+|An integer number with the HTTP response status code. Python's https://docs.python.org/3/library/http.html[`http.HTTPStatus`] class can be used to provide clearer descriptions written in English.
+
+|body
+|A string with the response body. In this workshop we'll be using always the https://docs.python.org/3/library/json.html#json.dumps[`json.dumps`] method to produce https://www.json.org/[JSON] output.
+
+|headers
+|This is an optional key, but if provided it should refer to a dictionary with additional response headers. See the <<modified_version>> of the Lambda function for an example of this.
+
+|===
++
+. Replace the complete contents of the `lambda_function.py` file with the following code:
++
+[[modified_version, modified version]]
+.File: lambda_function.py (modified version)
+[source, python3]
+----
+import json
+from http import HTTPStatus
+
+def lambda_handler(event, context):
+    return {
+        'statusCode': HTTPStatus.OK.value, # <1>
+        'body': json.dumps({
+            'message': 'Hello, World!',
+            'answer': 42,
+            'happy': True,
+            'name': context.function_name # <2>
+        }, indent=2), # <3>
+        'headers': { # <4>
+            'X-Powered-By': 'AWS Lambda'
+        }
+    }
+----
+<1> Here we use `http.HTTPStatus.OK.value` as a more comprehensible way to represent a response status code.
+<2> `context.function_name` allows us to obtain dynamically the name of our Lambda function.
+<3> The keyword argument `indent` for the `json.dumps` method produces a string where each element is on a line by its own and indented using the specified number of blank spaces.
+<4> Here, `headers` specifies a dictionary of additional HTTP response headers.
++
+. [[test_locally]]Test locally the new version of the Lambda function.
++
+IMPORTANT: You should test your functions locally before deploying them to the cloud. This allows you to detect basic syntax and runtime errors that otherwise just get reported as internal server errors without any further information.
+
+.. In the IDE's *AWS Resources* tab, select the *hello_world* function from the list of *Local Functions*.
+.. Press the circle with the play symbol to run the selected Lambda function. A new tab will appear in the IDE's main pane.
+.. In the new pane, choose *Run*.
+.. Check the *Execution results* panel to see if the response output is as follows:
++
+[source, json]
+----
+{
+    "statusCode": 200,
+    "body": "{\n  \"message\": \"Hello, World!\",\n  \"answer\": 42,\n  \"happy\": true,\n  \"name\": \"test\"\n}",
+    "headers": {
+        "X-Powered-By": "AWS Lambda"
+    }
+}
+----
+. [[deploy]]If there are no errors, you can proceed to deploy the Lambda function.
+.. In the IDE's *AWS Resources* tab, select again the *hello_world* function from the list of *Local Functions*.
+.. Choose the up arrow icon to deploy the selected Lambda function.
+
+. Now, test the deployed function using `curl`.
+.. Repeat the same steps as described in the <<testing_with_curl>> section.
+.. The output should now be as follows:
++
+[source, json]
+----
+{
+  "message": "Hello, World!",
+  "answer": 42,
+  "happy": true,
+  "name": "hello_world"
+}
+----
++
+To see the complete output of the response, including the headers, run `curl` with the `-i` command line option, something like this:
++
+[source, bash]
+curl -i https://some.end.point.amazonaws.com/default/hello_world
++
+WARNING: Remember to replace the above URL with your <<api_endpoint>>.
++
+The output should be similar to this:
++
+[source, text]
+----
+HTTP/2 200
+date: Sat, 23 Feb 2019 23:05:39 GMT
+content-type: application/json
+content-length: 102
+x-amzn-requestid: 894e4574-37bf-11e9-b747-5d1449c6886e
+x-amz-apigw-id: Vk22hHSKCYcFfxQ=
+x-powered-by: AWS Lambda
+x-amzn-trace-id: Root=1-5c71d1c3-4f3d191047b5d1600c62b110;Sampled=0
+
+{
+  "message": "Hello, World!",
+  "answer": 42,
+  "happy": true,
+  "name": "hello_world"
+}
+----
+
+=== Writing a Python Client
+
+This is how a Python 3 text client of the `hello_world` Lambda function would like like (create the file in your environment's main folder):
+
+[[hello_world_client, client Python file]]
+.File: hello_world_client.py
+[source, python3]
+----
+import requests
+
+URL = 'https://some.end.point.amazonaws.com/default/hello_world' # <1>
+
+result = requests.get(URL) # <2>
+print(result.status_code) # <3>
+print(result.headers['X-Powered-By']) # <4>
+body = result.json() # <5>
+print(body['message']) # <6>
+----
+
+<1> Make sure to change this URL with your <<api_endpoint>>.
+<2> `requests.get` performs an HTTP GET method request. Other HTTP methods are supported, such as POST, PUT, DELETE, and HEAD. Check the http://docs.python-requests.org/en/master/api/[requests API documentation] for more information.
+<3> Prints the status code of the HTTP response.
+<4> Prints the value of a specific header.
+<5> Retrieves the body of the response, parsing it from a JSON string and converting it into a Python dictionary.
+<6> Prints the associated value from the `message` key of the body dictionary.
+
+Run the above code. At the Cloud9 terminal type:
+
+[source, bash]
+python3 hello_world_client.py
+
+The output should be:
+
+[source, text]
+----
+200
+AWS Lambda
+Hello, World!
+----
+
+[[exercise_a, Exercise A]]
+=== Exercise A ★
+
+Instances of the https://docs.aws.amazon.com/lambda/latest/dg/python-context-object.html[`LambdaContext`] class (the type of the `context` parameter defined in the `lambda_handler` function) have a property called `memory_limit_in_mb`, which reports the amount of memory, expressed in megabytes, that has been allocated for the execution of the Lambda function.
+
+Change the code of the <<modified_version>> of the `hello_world` Lambda function so that the response object contains an attribute called `memory` associated to the value described above.
+
+Test the Lambda function locally and deploy it afterwards. Test it with the `curl` command as well. Make sure the output is as follows:
+
+[source, json]
+----
+{
+  "message": "Hello, World!",
+  "answer": 42,
+  "happy": true,
+  "name": "hello_world",
+  "memory": "128"
+}
+----
+
+=== Exercise B ★
+
+Modify the <<hello_world_client>> so that it also displays the value of the `memory` attribute added to the response object in <<exercise_a>>. The output of the program should be:
+
+[source, text]
+----
+200
+AWS Lambda
+Hello, World!
+128
+----
+
+=== Exercise C ★★
+
+Modify the `hello_world` Lambda function so that if a parameter `name` is provided in the query string then the `message` attribute in the response object should be the string “Hello, _name_!”, where _name_ is the value of said parameter. If there is no `name` parameter in the query string, or if there is no query string at all, then the associated value for the `message` attribute should remain “Hello, World!”.
+
+When testing locally the Lambda function, use the following JSON test codes in the *Payload* section and then choosing *Run*:
+
+.Test 1
+[source, json]
+----
+{
+  "queryStringParameters": {"name": "Thanos"}
+}
+----
+
+.Test 2
+[source, json]
+----
+{
+  "queryStringParameters": {"color": "Blue"}
+}
+----
+
+.Test 3
+[source, json]
+----
+{
+  "queryStringParameters": null
+}
+----
+
+.Test 4
+[source, json]
+----
+{}
+----
+
+The first test should produce a message with “Hello, Thanos!”. All the other tests should produce “Hello, World!”.
+
+Deploy your function once you're sure it works correctly.
+
+Now test it using `curl`. At the Cloud9 terminal type:
+
+[source, bash]
+curl https://some.end.point.amazonaws.com/default/hello_world?name=Thanos
+
+[source, bash]
+curl https://some.end.point.amazonaws.com/default/hello_world?color=Blue
+
+[source, bash]
+curl https://some.end.point.amazonaws.com/default/hello_world
+
+WARNING: Remember to replace the above URLs with your <<api_endpoint>>.
+
+The output should be the same as previously described.
+
+== RESTful Web Services: A Rehash
+
+=== General Overview
+
+REST stands for *Representational State Transfer*. It relies on a stateless, client-server, cacheable communications protocol. REST is an *architectural style* for designing networked applications. RESTful applications use HTTP requests to post and put data (create and/or update), read data (make queries), and delete data. Thus, REST uses HTTP for all four *CRUD* (Create/Read/Update/Delete) operations (see <<crud_table, table 3>>). When building web services the use of REST is often preferred over the more heavyweight SOAP (Simple Object Access Protocol) style because REST is less complex and does not leverage as much bandwidth, which makes it a better fit for use over the Internet.
+
+[[crud_table]]
+.CRUD/HTTP/SQL Mapping
+[cols="^,^,^,^,^"]
+|===
+|CRUD Operation |HTTP Method |SQL Statement|Idempotent?|Safe?
+
+|Create | POST | INSERT|No|No
+|Read | GET | SELECT|Yes|Yes
+|Update | PUT | UPDATE|Yes|No
+|Delete | DELETE | DELETE|Yes|No
+|===
+
+[NOTE]
+====
+We say an operation is *idempotent* if it can be applied multiple times without changing the result beyond the initial application. For example, in mathematics the absolute value is an idempotent operation: applying it once or multiple times gives us the same answer.
+
+An operation is *safe* if it's only used for data retrieval (it doesn't have any side-effects on the server).
+====
+
+REST was defined by Roy Thomas Fielding in his 2000 PhD dissertation http://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm[“Architectural Styles and the Design of Network-based Software Architectures”].
+
+=== API Guidelines
+
+REST is more a collection of principles than it is a set of standards. There are “best practices” and de-facto standards but those are constantly evolving. Fortunately for us, there are a couple of documents, both written by Todd Fredrich, that provide some useful guidelines on things to consider when writing RESTful APIs:
+
+* https://github.com/RestCheatSheet/api-cheat-sheet#api-design-cheat-sheet[REST API Design Cheat Sheet]
+* https://github.com/tfredrich/RestApiTutorial.com/raw/master/media/RESTful%20Best%20Practices-v1_2.pdf[REST API Best Practices: Recommendations for Creating Web Services]
+
+In the following sections we will incorporate several recommendations from these documents. Specifically:
+// TODO: Eliminate things not used.
+
+. We'll use a noun to name our resource, not a verb, and it will be in plural form (for example `'users'` instead of `'user'`).
+. We'll supply links in the response body for retrieval of the resource object itself or related objects. This is a constraint of the REST application architecture known as https://en.wikipedia.org/wiki/HATEOAS[HATEOAS] (Hypermedia as the Engine of Application State).
+. We'll use HTTP methods to mean something useful:
+  ** `GET` -- Read a resource or collection.
+  ** `POST` -- Create.
+  ** `PUT` -- Update.
+  ** `DELETE` -- Remove a resource or collection.
+. We'll make sure that the `GET`, `PUT` and `DELETE` operations are idempotent.
+. We'll use the http://json.org/[JSON] format for the request and response bodies.
+. We'll use meaningful HTTP status codes:
+  ** 200 -- _OK_. The request was successful.
+  ** 201 -- _Created_. New resource was created successfully.
+  ** 400 -- _Bad Request_. Malformed syntax or a bad query.
+  ** 404 -- _Not Found_. Requested resource does not exist.
+
+== Interactive Fiction
+
+=== The Pugnacious Orc Application
+
+Let's now look at a complete application built around several microservices. For this example we'll build an interactive fiction program (a.k.a. a text adventure game) called “The Pugnacious Orc”.
+
+.What is Interactive Fiction?
+****
+_Interactive fiction_, generally abbreviated as *IF*, is software that uses text to create virtual environments where a player inhabits. The program provides you with a simple written description of your surroundings, then asks you what you want do next. To move around or interact with your virtual surroundings, you key in text commands telling the game what you want your avatar to do. By reading and typing text, you make your way through the virtual world, collecting treasures, fighting monsters, avoiding traps, and solving puzzles until you finally reached the end of the game.
+****
+
+This is how the application will look when running:
+
+[source, text]
+----
+T H E   P U G N A C I O U S   O R C
+===================================
+
+After a drunken night out with friends, you awaken the
+next morning in a thick, dank forest. Head spinning and
+fighting the urge to vomit, you stand and marvel at
+your new, unfamiliar setting. The peace quickly fades
+when you hear a grotesque sound emitting behind you. A
+slobbering pugnacious orc is running towards you.
+
+What do you do?
+
+A. Grab a nearby rock and throw it at the orc
+B. Lie down and wait to be mauled
+C. Run
+Q. Quit program
+
+> b
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Welp, that was quick.
+
+You died!
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+G A M E   O V E R
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----
+
+The following diagram depicts our application's architecture:
+
+.Architecture for “The Pugnacious Orc” Application
+image::pugnacious_orc_architecture.png[width=500]
+
+As you can see, there are two microservices:
+
+places:: This microservice will provide all the information regarding the different places where an IF player con go. The data store for this microservice will be a read-only YAML text file.
++
+[NOTE]
+====
+https://learn.getgrav.org/advanced/yaml[YAML] (acronym for “YAML Ain't Markup Language”) is a human-readable data serialization language. It is commonly used for configuration files, but could be used in many applications where data is being stored  or transmitted. YAML targets many of the same applications as XML but has a minimal syntax.
+====
++
+scores:: This microservice will be used for storing and retrieving the scores of all the IF players. Its data store will be a DynamoDB table.
++
+[NOTE]
+====
+https://aws.amazon.com/dynamodb/[Amazon DynamoDB] is a fully managed proprietary NoSQL database service that supports key-value and document data structures and is offered as part of the Amazon Web Services portfolio.
+====
++
+////
+text_messages:: This microservice will allow the application to send the user's score to her/his mobile phone via an SMS text message. To do this, the microservice will use Amazon SNS.
++
+[NOTE]
+====
+https://aws.amazon.com/sns/Amazon[Amazon Simple Notification Service] (SNS) is an AWS service that provides a low-cost infrastructure for the mass delivery of messages, predominantly to mobile users.
+====
+////
+
+=== Places Microservice
+
+Follow these steps to create the *places* microservice as a Lambda function:
+
+. Repeat the steps in the section <<create_a_new_Lambda_function>>. The new Lambda function should be called *places*. Select *Choose an existing role* and use the role we created before.
+
+. Create the corresponding <<api_gateway>> exactly as we did before.
+
+. <<import_the_new_lambda_function>> into the Cloud9 environment.
+. In the Cloud9 terminal, change the current working directory to where the Lambda function code resides. Type:
+[source, bash]
+cd ~/environment/places
+
+. As noted before, this microservice will use a YAML file as its read-only data store. So we'll need to install the `pyyaml` module. At the terminal type:
++
+[source, bash]
+----
+python3 -m pip install pyyaml --target .
+----
++
+[NOTE]
+====
+If the Lambda function code depends on external libraries other than Boto 3, it is necessary to install them with `pip` in the function's the local directory. The “--target .” command line option is used precisely to achieve this.
+====
+
+. Retrieve the microservice's `pugnacious_orc.yaml` file. At the terminal type:
+[source, bash]
+wget bit.ly/2XmFTis -O pugnacious_orc.yaml
++
+Open this file in the editor and take some time to inspect it.
++
+In any YAML file, structure is shown through indentation (one or more spaces). Sequence items (lists) are denoted by a dash, and key value pairs within a map (dictionaries) are separated by a colon.
++
+Let's discuss the design of the `pugnacious_orc.yaml` file. At the highest level it represents a map of different places where an IF game player can be. Each key in this map is the name of a _place_, and its associated value is a also map, but containing the information of the named _place_ using the following keys:
++
+--
+* *statement* -- A text describing this _place_.
+* *options* -- This key may be inexistent, and if so it means that the game must end if a player happens to arrive here. Yet, if the key does exist, it contains a sequence of two or more _option_ maps, each of these with the following keys:
+** *text* -- A text explaining a possible action that the player may take at this very moment.
+** *target* -- The name of a place where the player will go to if she/he takes this particular action.
+* *points* -- If this key exists, it indicates a certain number of points that the player should accumulate as a reward for reaching this place.
+--
++
+This is an example of a _place_ named “run” in the YAML file:
++
+[source, yaml]
+----
+run:
+  statement: You run, but the orc's speed is too great. Now what?
+  options:
+    - text: Hide behind a boulder
+      target: hide
+    - text: Fight against the orc
+      target: fight
+    - text: Run towards an abandoned town
+      target: town
+  points: 5
+----
++
+A last thing to point out: a _place_ whose name has a “__” (double underscore, or dunder) prefix marks the game's starting place. Obviously, there should only be one of those in the entire the YAML file.
+
+. Now, retrieve the microservice's `lambda_function.py` source file. Type at the terminal:
+[source, bash]
+wget bit.ly/2H0468C -O lambda_function.py
++
+Open the file in the editor and inspect it to understand how the microservice works.
+
+. <<test_locally,Test locally>> the Lambda function, using the following JSON code in the payload section:
++
+.Test 1
+[source, json]
+----
+{
+    "httpMethod": "GET",
+    "path": "/places",
+    "headers": {
+        "Host": "localhost"
+    }
+}
+----
++
+.Test 2
+[source, json]
+----
+{
+    "httpMethod": "GET",
+    "path": "/places",
+    "queryStringParameters": {
+        "place": "rock"
+    },
+    "headers": {
+        "Host": "localhost"
+    }
+}
+----
++
+The corresponding response output should be:
++
+.Output 1
+[source, json]
+----
+{
+    "statusCode": 200,
+    "body": "[\n  {\n    \"place\": \"__start\",\n    \"url\": \"https://localhost/default/places/?place=__start\"\n  },\n  {\n    \"place\": \"cave\",\n    \"url\": \"https://localhost/default/places/?place=cave\"\n  },\n  {\n    \"place\": \"fight\",\n    \"url\": \"https://localhost/default/places/?place=fight\"\n  },\n  {\n    \"place\": \"fight_with_sword\",\n    \"url\": \"https://localhost/default/places/?place=fight_with_sword\"\n  },\n  {\n    \"place\": \"fight_without_sword\",\n    \"url\": \"https://localhost/default/places/?place=fight_without_sword\"\n  },\n  {\n    \"place\": \"hide_behind_boulder\",\n    \"url\": \"https://localhost/default/places/?place=hide_behind_boulder\"\n  },\n  {\n    \"place\": \"hide_in_cave\",\n    \"url\": \"https://localhost/default/places/?place=hide_in_cave\"\n  },\n  {\n    \"place\": \"lie\",\n    \"url\": \"https://localhost/default/places/?place=lie\"\n  },\n  {\n    \"place\": \"next_with_sword\",\n    \"url\": \"https://localhost/default/places/?place=next_with_sword\"\n  },\n  {\n    \"place\": \"next_without_sword\",\n    \"url\": \"https://localhost/default/places/?place=next_without_sword\"\n  },\n  {\n    \"place\": \"rock\",\n    \"url\": \"https://localhost/default/places/?place=rock\"\n  },\n  {\n    \"place\": \"rock_again\",\n    \"url\": \"https://localhost/default/places/?place=rock_again\"\n  },\n  {\n    \"place\": \"run\",\n    \"url\": \"https://localhost/default/places/?place=run\"\n  },\n  {\n    \"place\": \"sneak_out\",\n    \"url\": \"https://localhost/default/places/?place=sneak_out\"\n  },\n  {\n    \"place\": \"town\",\n    \"url\": \"https://localhost/default/places/?place=town\"\n  },\n  {\n    \"place\": \"wait_with_flower\",\n    \"url\": \"https://localhost/default/places/?place=wait_with_flower\"\n  },\n  {\n    \"place\": \"wait_without_flower\",\n    \"url\": \"https://localhost/default/places/?place=wait_without_flower\"\n  }\n]"
+}
+----
++
+.Output 2
+[source, json]
+----
+{
+    "statusCode": 200,
+    "body": "{\n  \"statement\": \"The orc is stunned, but regains control. He begins\\nrunning towards you again.\\n\\nWhat do you want to do?\\n\",\n  \"options\": [\n    {\n      \"text\": \"Run\",\n      \"target\": \"run\"\n    },\n    {\n      \"text\": \"Throw another rock\",\n      \"target\": \"rock_again\"\n    },\n    {\n      \"text\": \"Go to a nearby cave\",\n      \"target\": \"cave\"\n    }\n  ],\n  \"points\": 10,\n  \"place\": \"rock\"\n}"
+}
+----
++
+If there are no errors, <<deploy, deploy the Lambda function>> and test it using `curl`:
++
+.Test 3
+[source, bash]
+curl https://some.end.point.amazonaws.com/default/places
++
+.Test 4
+[source, bash]
+curl https://some.end.point.amazonaws.com/default/places?place=rock
++
+WARNING: Remember to replace the above URLs with your <<api_endpoint>> for the places-API.
++
+The corresponding output should look like this:
++
+.Output 3
+[source, text]
+----
+[
+  {
+    "place": "__start",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=__start"
+  },
+  {
+    "place": "cave",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=cave"
+  },
+  {
+    "place": "fight",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=fight"
+  },
+  {
+    "place": "fight_with_sword",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=fight_with_sword"
+  },
+  {
+    "place": "fight_without_sword",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=fight_without_sword"
+  },
+  {
+    "place": "hide_behind_boulder",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=hide_behind_boulder"
+  },
+  {
+    "place": "hide_in_cave",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=hide_in_cave"
+  },
+  {
+    "place": "lie",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=lie"
+  },
+  {
+    "place": "next_with_sword",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=next_with_sword"
+  },
+  {
+    "place": "next_without_sword",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=next_without_sword"
+  },
+  {
+    "place": "rock",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=rock"
+  },
+  {
+    "place": "rock_again",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=rock_again"
+  },
+  {
+    "place": "run",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=run"
+  },
+  {
+    "place": "sneak_out",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=sneak_out"
+  },
+  {
+    "place": "town",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=town"
+  },
+  {
+    "place": "wait_with_flower",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=wait_with_flower"
+  },
+  {
+    "place": "wait_without_flower",
+    "url": "https://some.end.point.amazonaws.com/default/places/?place=wait_without_flower"
+  }
+]
+----
++
+.Output 4
+[source, text]
+----
+{
+  "statement": "The orc is stunned, but regains control. He begins\nrunning towards you again.\n\nWhat do you want to do?\n",
+  "options": [
+    {
+      "text": "Run",
+      "target": "run"
+    },
+    {
+      "text": "Throw another rock",
+      "target": "rock_again"
+    },
+    {
+      "text": "Go to a nearby cave",
+      "target": "cave"
+    }
+  ],
+  "points": 10,
+  "place": "rock"
+}
+----
++
+If everything is working fine, proceed to the next section in order to create our application's client code.
+
+=== The Client
+
+. In the terminal change the current working directory to the environment's main folder. At the Cloud9 terminal, type:
++
+[source, bash]
+cd ~/environment
+
+. Retrieve the application's client code. Type at the terminal:
++
+[source, bash]
+wget bit.ly/2T4vvgF -O client.py
+
+. Open the `client.py` file in the editor and replace the value of the `URL_PLACES` variable with the <<api_endpoint>> of the places-API.
+
+. Run the program. At the terminal, type:
++
+[source, bash]
+python3 client.py
++
+Play with the program for a while to make sure it works fine.
+
+=== Exercise D ★
+
+Modify the `pugnacious_orc.yaml` file to add a new terminal place (a place that has no `options` attribute, thus terminates the program) and add it as a target reachable from the `__start` place.
+
+=== Exercise E ★★
+
+Modify the `client.py` so that it accumulates all the points a player obtains when going through all the the different places visited.  Remember that the JSON response returned by the `places` Lambda function, when the `places` query string parameter has been provided, might have an integer attribute called `points`, but this is not always the case.
+
+At the end of the game the total amount of points accumulated by the player in the current run should be displayed, as demonstrated in the very last lines of the following example:
+
+[source, text]
+----
+T H E   P U G N A C I O U S   O R C
+===================================
+
+After a drunken night out with friends, you awaken the
+next morning in a thick, dank forest. Head spinning and
+fighting the urge to vomit, you stand and marvel at
+your new, unfamiliar setting. The peace quickly fades
+when you hear a grotesque sound emitting behind you. A
+slobbering pugnacious orc is running towards you.
+
+What do you do?
+
+A. Grab a nearby rock and throw it at the orc
+B. Lie down and wait to be mauled
+C. Run
+Q. Quit program
+
+> a
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The orc is stunned, but regains control. He begins
+running towards you again.
+
+What do you want to do?
+
+A. Run
+B. Throw another rock
+C. Go to a nearby cave
+Q. Quit program
+
+> a
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+You run as quickly as possible, but the orc's
+speed is too great.
+
+What do you want to do?
+
+A. Hide behind boulder
+B. Fight
+C. Run towards an abandoned town
+Q. Quit program
+
+> b
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+You're no match for an orc.
+
+You died!
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Your score is: 15
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+G A M E   O V E R
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----
+
+=== Scores Microservice
+
+==== The DynamoDB Table
+
+We're going to use a DynamoDB table to store the scores of the users of our IF game.
+
+. In a new browser window or tab, go to the https://console.aws.amazon.com/[AWS Management Console].
+
+. Open the DynamoDB console. At the *AWS services* field type *DynamoDB* and select *DynamoDB Managed NoSQL Database*.
+
+. Choose *Create table*.
+
+. On the *Create DynamoDB table* page, do the following:
+
+** In *Table name*, type *scores*.
+** In *Primary key*, type *uuid* and keep *String* as its corresponding data type.
++
+[NOTE]
+====
+A _Universal Unique Identifier_ (UUID) is a 128-bit number used to uniquely identify some object or entity on the Internet. Depending on the specific mechanisms used, a UUID is either guaranteed to be different or is, at least, extremely likely to be different from any other UUID.
+====
+** Keep the rest of the default settings and choose *Create*.
+
+Once the table has been created we can add to it new items. The following Python code shows how to add a new item to the DynamoDB table (create the file in your environment's main folder):
+
+.File: put_item.py
+[source, python3]
+----
+import boto3
+import uuid
+from datetime import datetime
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('scores')
+data = {
+    'uuid' : uuid.uuid1().hex, # <1>
+    'initials': 'JS',
+    'score': 99,
+    'timestamp': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') # <2>
+}
+table.put_item(Item=data)
+print('Item added.')
+----
+
+<1> The only required attribute is `uuid` because we declared it to be the _primary key_ when we created the DynamoDB table. In this case we generate a version 1 UUID which uses a timestamp and the system's MAC address. Besides the primary key, we are free to include any additional attributes we want to store in the database, in our case: `initials`, `score`, and `timestamp`.
+<2> Here we create our own timestamp string using the current https://www.timeanddate.com/time/aboututc.html[UTC] date (YYYY-MM-DD) and time (HH:MM:SS).
+
+To run the program, type at the terminal:
+
+[source, bash]
+python3 put_item.py
+
+Go back to the DynamoDB console and choose the *Items* tab to verify that a new item has been added to the `scores` table.
+
+The following code demonstrates how to scan the full contents of the table (create the file in your environment's main folder):
+
+.File: scan.py
+[source, python3]
+----
+import boto3
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('scores')
+
+items = table.scan()['Items']
+for item in items:
+    print(item)
+----
+
+To run the program, type at the terminal:
+
+[source, bash]
+python3 scan.py
+
+The output should look something like this:
+
+[source, text]
+----
+{'score': Decimal('99'), 'uuid': '37ee677e3c8b11e9ac910a9b1c6b71fe', 'initials': 'JS', 'timestamp': '2019-03-02 01:33:44'}
+----
+
+CAUTION: Note that the `score` attribute was originally set to a regular Python `int` value, but when retrieved from the database its type is `Decimal`. Be careful with this situation because sometimes this produces some unexpected errors.
+
+====  The scores Lambda Function
+
+Let's now create the *scores* microservice. Once again, we create a new Lambda function:
+
+. Repeat the steps in the section <<create_a_new_Lambda_function>>. This time the Lambda function should be called *scores*. Select *Choose an existing role* and use the role we created before.
+
+. Create the corresponding <<api_gateway>> exactly as we did before.
+
+. <<import_the_new_lambda_function>> into the Cloud9 environment.
+. In the Cloud9 terminal, change the current working directory to where the Lambda function code resides. Type:
+[source, bash]
+cd ~/environment/scores
+
+. Retrieve the microservice's lambda_function.py source file. Type at the terminal:
++
+[source, bash]
+wget bit.ly/2Tq2NGz -O lambda_function.py
++
+Open the file in the editor and inspect it to understand how the microservice works.
+
+. <<test_locally,Test locally>> the Lambda function, using the following JSON code in the payload section:
++
+.Test 1
+[source, json]
+----
+{
+    "httpMethod": "POST",
+    "body": "{ \"initials\": \"MJ\", \"score\": 100 }"
+}
+----
++
+.Test 2
+[source, json]
+----
+{
+    "httpMethod": "GET"
+}
+----
++
+The corresponding response output should be something like this:
++
+.Output 1
+[source, json]
+----
+{
+    "statusCode": 201,
+    "body": "{\n  \"message\": \"New resource created with uuid = 5db3b7203c8b11e9ad200242ac110002.\"\n}"
+}
+----
++
+.Output 2
+[source, json]
+----
+{
+    "statusCode": 200,
+    "body": "[\n  {\n    \"uuid\": \"5db3b7203c8b11e9ad200242ac110002\",\n    \"initials\": \"MJ\",\n    \"score\": 100,\n    \"timestamp\": \"2019-03-02 01:34:48\"\n  },\n  {\n    \"uuid\": \"37ee677e3c8b11e9ac910a9b1c6b71fe\",\n    \"initials\": \"JS\",\n    \"score\": 99,\n    \"timestamp\": \"2019-03-02 01:33:44\"\n  }\n]"
+}
+----
++
+If there are no errors, <<deploy, deploy the Lambda function>> and test it using `curl`:
++
+.Test 3
+[source, bash]
+curl https://some.end.point.amazonaws.com/default/scores \
+-X POST \
+-d '{ "initials": "DA", "score": 42 }'
++
+.Test 4
+[source, bash]
+curl https://some.end.point.amazonaws.com/default/scores
++
+WARNING: Remember to replace the above URLs with your <<api_endpoint>> for the scores-API.
++
+The corresponding output should look like this:
++
+.Output 3
+[source, text]
+----
+{
+  "message": "New resource created with uuid = 3335aace3c9211e9b04f3a7836691d34."
+}
+----
++
+.Output 4
+[source, text]
+----
+[
+  {
+    "uuid": "5db3b7203c8b11e9ad200242ac110002",
+    "initials": "MJ",
+    "score": 100,
+    "timestamp": "2019-03-02 01:34:48"
+  },
+  {
+    "uuid": "37ee677e3c8b11e9ac910a9b1c6b71fe",
+    "initials": "JS",
+    "score": 99,
+    "timestamp": "2019-03-02 01:33:44"
+  },
+  {
+    "uuid": "3335aace3c9211e9b04f3a7836691d34",
+    "initials": "DA",
+    "score": 42,
+    "timestamp": "2019-03-02 02:23:43"
+  }
+]
+----
+
+=== Exercise F ★★★
+
+Modify the `client.py` file so that it behaves as follows once the game has ended:
+
+. If the player has obtained more than 0 points the program should request the user to type her/his initials and then it should call the `scores` microservice using the corresponding POST method to store that information in the database.
++
+This is how you make a POST method request in Python:
++
+.File: post_example.py
+[source, python3]
+----
+import requests
+
+URL = 'https://some.end.point.amazonaws.com/default/scores'
+
+payload = {
+    'initials': 'PJ',
+    'score': 15,
+}
+result = requests.post(URL, json=payload)
+print(result.status_code)
+body = result.json()
+print(body['message'])
+----
+
+. The program must display the scores of every player by calling the `scores` microservice using the corresponding GET method.
+
+This is how the end of the game should look, assuming that the current user scored 10 points:
+
+[source, text]
+----
+Input your initials: AO
+
+SCORES
+------------------------------
+MJ  100 on 2019-03-02 01:34:48
+JS   99 on 2019-03-02 01:33:44
+DA   42 on 2019-03-02 02:23:43
+PJ   15 on 2019-03-02 03:46:44
+AO   10 on 2019-03-02 03:49:35
+------------------------------
+----
+
+////
+=== Exercise G ★★★
+
+Write the `text_messages` microservice as a Lambda function that allows sending an SMS text message to a mobile phone using a POST request.
+
+Once it's working, modify the `client.py` code so that a user can receive her/his score as a text message when the program ends. Obviously, the program must request the user's phone number.
+
+Here's a code example on how to send text messages:
+
+.File: sms_example.py
+[source, python3]
+----
+import boto3
+
+client = boto3.client('sns')
+
+client.publish(
+    PhoneNumber='+1XXX5550100', # <1>
+    Message='Hello, Phone!\n\nMessage sent using Amazon Simple Notification Service.')
+----
+
+<1> Replace with an actual cell phone number using the https://developers.omnisend.com/guides/e164-phone-number-formatting[E.164 international phone number formatting].
+////
+
+== Workshop Repository
+
+You can download all the files related to this workshop (these notes and the solutions to exercises) from the following github repository:
+
+* https://github.com/ariel-ortiz/sigcse2019-workshop403
+
+== Copyright and License
+
+* Copyright © 2019 by Ariel Ortiz.
+* This work is licensed under a http://creativecommons.org/licenses/by-nc-sa/4.0/[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License].
+* Free use of the source code presented here is granted under the terms of the https://www.gnu.org/licenses/gpl-3.0.en.html[GPL version 3 License].
